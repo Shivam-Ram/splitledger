@@ -19,6 +19,11 @@
         Invalid email or password.
     </div>
 
+    <!-- Registration success message -->
+    <div th:if="${param.registered}" class="alert alert-success py-2 small" role="alert">
+        Account created successfully! Please sign in.
+    </div>
+
     <!-- Logout message -->
     <div th:if="${param.logout}" class="alert alert-success py-2 small" role="alert">
         You have been logged out successfully.
@@ -35,6 +40,11 @@
         </div>
         <button type="submit" class="btn btn-primary w-100 fw-semibold py-2">Sign In</button>
     </form>
+
+    <div class="text-center mt-3">
+        <span class="small text-muted">Don't have an account? </span>
+        <a th:href="@{/register}" class="small text-decoration-none">Register here</a>
+    </div>
 </div>
 
 </body>
