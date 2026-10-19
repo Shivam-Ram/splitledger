@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SplitLedger - Manage Team & Splits</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark px-4 py-3">
+    <a class="navbar-brand fw-bold" href="/admin/dashboard">⚡ SPLITLEDGER</a>
+    <div class="navbar-nav me-auto">
+        <a class="nav-link" href="/admin/dashboard">Dashboard</a>
+        <a class="nav-link active fw-semibold" href="/admin/members">Manage Team</a>
+        <a class="nav-link text-info" href="/member/dashboard">View as Member ↗</a>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        <span class="navbar-text text-white">Admin: Shivam</span>
+        <form th:action="@{/logout}" method="post" class="m-0">
+            <button type="submit" class="btn btn-outline-danger btn-sm fw-semibold">Logout</button>
+        </form>
+    </div>
+</nav>
+
+<div class="container my-5">
+
+    <!-- Error Alert agar Total != 100% -->
+    <div th:if="${errorMessage != null}" class="alert alert-danger shadow-sm border-0 d-flex align-items-center" role="alert">
+        <strong class="me-2">Validation Error:</strong> <span th:text="${errorMessage}"></span>
+    </div>
+
+    <div class="row g-4">
+        <!-- Card 1: Add New Member -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-bold">➕ Add New Member</h5>
+                </div>
+                <div class="card-body">
+                    <form action="/admin/members/add" method="post" class="d-flex flex-column gap-3">
+                        <div>
+                            <label class="form-label small fw-semibold">Full Name</label>
+                            <input type="text" name="name" class="form-control" placeholder="e.g. Ramesh Kumar" required>
+                        </div>
+                        <div>
+                            <label class="form-label small fw-semibold">Email Address</label>
+                            <input type="email" name="email" class="form-control" placeholder="ramesh@gmail.com" required>
+                        </div>
+                        <div>
+                            <label class="form-label small fw-semibold">UPI ID</label>
+                            <input type="text" name="upiId" class="form-control" placeholder="ramesh@okaxis" required>
+                        </div>
+                        <div>
+                            <label class="form-label small fw-semibold">Share Percentage (%)</label>
+                            <input type="number" step="0.01" name="percentageShare" class="form-control" placeholder="e.g. 25.00" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary fw-semibold mt-2">Add Member</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Current Team & Share Adjuster -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0 fw-bold">👥 Team Members & Percentage Cuts</h5>
+                        <small class="text-muted">Total allocated share must equal exactly 100%</small>
+                    </div>
+                    <div>
+                        <span class="badge" 
+                              th:classappend="${totalPercentage == 100.00 ? 'bg-success' : 'bg-danger'}" 
+                              style="font-size: 0.95rem;">
+                            Total: <span th:text="${totalPercentage}"></span>%
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <form action="/admin/members/update-shares" method="post">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-secondary">
+                                    <tr>
+                                        <th>Name & Email</th>
+                                        <th>UPI ID</th>
+                                        <th style="width: 150px;">Share (%)</th>
+                                        <th class="text-end">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="member : ${members}">
+                                        <td>
+                                            <div class="fw-bold" th:text="${member.user.name}">Name</div>
+                                            <small class="text-muted" th:text="${member.user.email}">email</small>
+                                        </td>
+                                        <td><code th:text="${member.user.upiId}">upi@id</code></td>
+                                        <td>
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" step="0.01" 
+                                                       th:name="'share_' + ${member.id}" 
+                                                       th:value="${member.percentageShare}" 
+                                                       class="form-control fw-semibold" required>
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-end">
+                                            <button type="submit" 
+                                                    formaction="/admin/members/delete" 
+                                                    name="memberId" 
+                                                    th:value="${member.id}" 
+                                                    class="btn btn-sm btn-outline-danger"
+                                                    onclick="return confirm('Are you sure you want to remove this member?')">
+                                                Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="p-3 bg-light border-top d-flex justify-content-end">
+                            <button type="submit" class="btn btn-success fw-semibold px-4">Save Percentage Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
