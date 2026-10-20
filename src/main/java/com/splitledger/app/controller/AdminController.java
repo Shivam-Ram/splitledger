@@ -18,6 +18,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Controller
 @RequestMapping("/admin")
@@ -94,17 +95,30 @@ public class AdminController {
         return "admin/manage-members";
     }
 
-    // 5. Add New Member with Share
+    // 5. Add New Member with Share (Handles both existing and new users safely)
     @PostMapping("/members/add")
     public String addMember(@RequestParam String name,
                             @RequestParam String email,
                             @RequestParam String upiId,
                             @RequestParam BigDecimal percentageShare) {
-        // Password hashed using BCrypt
-        User newUser = new User(name, email, passwordEncoder.encode("pass123"), User.Role.MEMBER, upiId);
-        userRepository.save(newUser);
 
-        GroupMember member = new GroupMember(newUser, percentageShare);
+        String cleanEmail = email.trim().toLowerCase();
+        Optional<User> existingUserOpt = userRepository.findByEmail(cleanEmail);
+        User user;
+
+        if (existingUserOpt.isPresent()) {
+            user = existingUserOpt.get();
+            // Update UPI if provided
+            if (upiId != null && !upiId.isBlank()) {
+                user.setUpiId(upiId.trim());
+                userRepository.save(user);
+            }
+        } else {
+            user = new User(name.trim(), cleanEmail, passwordEncoder.encode("pass123"), User.Role.MEMBER, upiId.trim());
+            userRepository.save(user);
+        }
+
+        GroupMember member = new GroupMember(user, percentageShare);
         groupMemberRepository.save(member);
 
         return "redirect:/admin/members";

@@ -25,9 +25,9 @@
 
 <div class="container my-5">
 
-    <!-- Error Alert agar Total != 100% -->
+    <!-- Error Alert agar Total != 100% ya duplicate error ho -->
     <div th:if="${errorMessage != null}" class="alert alert-danger shadow-sm border-0 d-flex align-items-center" role="alert">
-        <strong class="me-2">Validation Error:</strong> <span th:text="${errorMessage}"></span>
+        <strong class="me-2">Error:</strong> <span th:text="${errorMessage}"></span>
     </div>
 
     <div class="row g-4">
@@ -38,7 +38,7 @@
                     <h5 class="mb-0 fw-bold">➕ Add New Member</h5>
                 </div>
                 <div class="card-body">
-                    <form action="/admin/members/add" method="post" class="d-flex flex-column gap-3">
+                    <form th:action="@{/admin/members/add}" method="post" class="d-flex flex-column gap-3">
                         <div>
                             <label class="form-label small fw-semibold">Full Name</label>
                             <input type="text" name="name" class="form-control" placeholder="e.g. Ramesh Kumar" required>
@@ -78,7 +78,7 @@
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <form action="/admin/members/update-shares" method="post">
+                    <form th:action="@{/admin/members/update-shares}" method="post">
                         <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="table-secondary">
@@ -107,7 +107,7 @@
                                         </td>
                                         <td class="text-end">
                                             <button type="submit" 
-                                                    formaction="/admin/members/delete" 
+                                                    th:formaction="@{/admin/members/delete}" 
                                                     name="memberId" 
                                                     th:value="${member.id}" 
                                                     class="btn btn-sm btn-outline-danger"
