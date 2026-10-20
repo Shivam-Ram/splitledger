@@ -3,30 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SplitLedger - Admin Dashboard</title>
-    <!-- Bootstrap 5 CSS -->
+    <title>SplitLedger - Member Portal</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        #qrcode img {
-            margin: 0 auto;
-            border: 8px solid #f8f9fa;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
-    </style>
 </head>
 <body class="bg-light">
 
+<!-- Member Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-4 py-3">
-    <a class="navbar-brand fw-bold" href="/admin/dashboard">⚡ SPLITLEDGER</a>
-    <div class="navbar-nav me-auto">
-        <a class="nav-link active fw-semibold" href="/admin/dashboard">Dashboard</a>
-        <a class="nav-link" href="/admin/members">Manage Team</a>
-        <a class="nav-link text-info" href="/member/dashboard">View as Member ↗</a>
-    </div>
-    <div class="d-flex align-items-center gap-3">
-        <span class="navbar-text text-white">Admin: Shivam</span>
+    <a class="navbar-brand fw-bold" href="/member/dashboard">⚡ SPLITLEDGER</a>
+    <span class="navbar-text text-secondary ms-2">Member Portal</span>
+    
+    <div class="ms-auto d-flex align-items-center gap-3">
+        <!-- Logged-in User ka dynamic name -->
+        <span class="navbar-text text-white fw-semibold" th:text="${currentUser.name}">User Name</span>
         <form th:action="@{/logout}" method="post" class="m-0">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
             <button type="submit" class="btn btn-outline-danger btn-sm fw-semibold">Logout</button>
         </form>
     </div>
@@ -34,95 +25,70 @@
 
 <div class="container my-5">
 
-    <!-- Card 1: Add New Income -->
+    <!-- Member Profile Summary Card -->
     <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-white py-3">
-            <h5 class="mb-0 fw-bold">📥 Log New Income Event</h5>
-        </div>
-        <div class="card-body">
-            <form th:action="@{/admin/add-income}" method="post" class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">Client / Source Name</label>
-                    <input type="text" name="sourceName" class="form-control" placeholder="e.g. Acme Corp Milestone" required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Gross Amount Received (₹)</label>
-                    <input type="number" step="0.01" name="grossAmount" class="form-control" placeholder="100000" required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Pre-split Deductions (₹)</label>
-                    <input type="number" step="0.01" name="deductions" class="form-control" placeholder="0">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Received Date</label>
-                    <input type="date" name="receivedDate" class="form-control" required>
-                </div>
-                <div class="col-12 mt-3">
-                    <button type="submit" class="btn btn-primary px-4 fw-semibold">Calculate & Generate Payouts</button>
-                </div>
-            </form>
+        <div class="card-body p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h3 class="fw-bold mb-1" th:text="${currentUser.name}">Member Name</h3>
+                <span class="text-muted" th:text="${currentUser.email}">member@email.com</span>
+                <span class="badge bg-secondary ms-2" th:text="'Registered UPI: ' + ${currentUser.upiId}">UPI: id</span>
+            </div>
+            <div>
+                <span class="badge bg-primary fs-6 px-3 py-2">TEAM MEMBER</span>
+            </div>
         </div>
     </div>
 
-    <!-- Card 2: Current / Latest Cycle Splits -->
-    <div class="card shadow-sm border-0" th:if="${latestRecord != null}">
-        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <div>
-                <h5 class="mb-0 fw-bold" th:text="${latestRecord.sourceName}">Income Event</h5>
-                <small class="text-muted">
-                    Gross: ₹<span th:text="${latestRecord.grossAmount}"></span> | 
-                    Deductions: ₹<span th:text="${latestRecord.deductions}"></span> | 
-                    <strong>Net Distributable: ₹<span th:text="${latestRecord.netDistributable}"></span></strong>
-                </small>
-            </div>
-            <span class="badge bg-info text-dark px-3 py-2">Latest Cycle</span>
+    <!-- Payout History & Pool Transparency Table -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold">📜 Your Payout History & Pool Transparency</h5>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-secondary">
                         <tr>
-                            <th>Member</th>
-                            <th>Share (%)</th>
-                            <th>Calculated Amount</th>
-                            <th>Payment Action</th>
-                            <th>Status</th>
-                            <th>Action</th>
+                            <th>Date</th>
+                            <th>Project / Source</th>
+                            <th>Gross Pool</th>
+                            <th>Deductions</th>
+                            <th>Net Pool</th>
+                            <th>Your Share</th>
+                            <th>Your Payout</th>
+                            <th>Status & Confirmation</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr th:each="split : ${splits}">
-                            <td class="fw-semibold" th:text="${split.user.name}">Member Name</td>
+                        <tr th:if="${#lists.isEmpty(myPayouts)}">
+                            <td colspan="8" class="text-center py-4 text-muted">No payout records found yet.</td>
+                        </tr>
+                        <tr th:each="split : ${myPayouts}">
+                            <td th:text="${split.incomeRecord.receivedDate}">2026-10-20</td>
+                            <td class="fw-bold" th:text="${split.incomeRecord.sourceName}">Project Name</td>
+                            <td>₹<span th:text="${split.incomeRecord.grossAmount}"></span></td>
+                            <td class="text-danger">-₹<span th:text="${split.incomeRecord.deductions}"></span></td>
+                            <td class="fw-semibold">₹<span th:text="${split.incomeRecord.netDistributable}"></span></td>
                             <td><span class="badge bg-secondary" th:text="${split.percentageApplied + '%'}"></span></td>
-                            <td class="fw-bold text-success">₹<span th:text="${split.calculatedAmount}"></span></td>
+                            <td class="fw-bold text-success fs-6">₹<span th:text="${split.calculatedAmount}"></span></td>
                             <td>
-                                <div class="d-flex align-items-center gap-2">
-                                    <code th:text="${split.user.upiId}">upi@id</code>
-                                    <!-- Button to Open Dynamic QR Modal -->
-                                    <button type="button" 
-                                            class="btn btn-sm btn-outline-dark fw-semibold"
-                                            th:data-name="${split.user.name}"
-                                            th:data-upi="${split.user.upiId}"
-                                            th:data-amount="${split.calculatedAmount}"
-                                            onclick="openQrModal(this)">
-                                        📱 Show QR
-                                    </button>
+                                <!-- PENDING: Admin ne abhi send nahi kiya -->
+                                <span th:if="${split.paymentStatus.name() == 'PENDING'}" class="badge bg-warning text-dark">PENDING PAYMENT</span>
+
+                                <!-- SENT: Admin ne pay kiya, member ko confirm button milega -->
+                                <div th:if="${split.paymentStatus.name() == 'SENT'}" class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary">PAID BY ADMIN</span>
+                                    <form th:action="@{/member/confirm-received}" method="post" class="m-0">
+                                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                        <input type="hidden" name="splitId" th:value="${split.id}">
+                                        <button type="submit" class="btn btn-sm btn-success fw-semibold">Confirm Received</button>
+                                    </form>
                                 </div>
-                            </td>
-                            <td>
-                                <span th:if="${split.paymentStatus.name() == 'PENDING'}" class="badge bg-warning text-dark">PENDING</span>
-                                <span th:if="${split.paymentStatus.name() == 'SENT'}" class="badge bg-primary">SENT</span>
-                                <span th:if="${split.paymentStatus.name() == 'SETTLED'}" class="badge bg-success">SETTLED</span>
-                            </td>
-                            <td>
-                                <form th:if="${split.paymentStatus.name() == 'PENDING'}" th:action="@{/admin/mark-sent}" method="post" class="d-flex gap-2">
-                                    <input type="hidden" name="splitId" th:value="${split.id}">
-                                    <input type="text" name="transactionRef" class="form-control form-control-sm" placeholder="UTR (optional)" style="width: 130px;">
-                                    <button type="submit" class="btn btn-sm btn-success">Mark Paid</button>
-                                </form>
-                                <span th:if="${split.paymentStatus.name() != 'PENDING'}" class="text-muted small">
-                                    <span th:text="${split.transactionRef != null ? 'Ref: ' + split.transactionRef : 'Marked Paid'}"></span>
-                                </span>
+
+                                <!-- SETTLED: Dono side complete -->
+                                <span th:if="${split.paymentStatus.name() == 'SETTLED'}" class="badge bg-success">SETTLED (RECEIVED)</span>
+                                
+                                <small th:if="${split.transactionRef != null}" class="d-block text-muted" th:text="'Ref: ' + ${split.transactionRef}"></small>
                             </td>
                         </tr>
                     </tbody>
@@ -133,72 +99,6 @@
 
 </div>
 
-<!-- UPI QR Code Popup Modal -->
-<div class="modal fade" id="qrModal" tabindex="-1" aria-labelledby="qrModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-dark text-white">
-                <h5 class="modal-title fw-bold" id="qrModalLabel">UPI Payment QR</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center p-4">
-                <p class="text-muted mb-2">Scan with GPay, PhonePe, Paytm, or any UPI App</p>
-                
-                <!-- QR Code Box -->
-                <div id="qrcode" class="my-3 d-flex justify-content-center"></div>
-
-                <h4 class="fw-bold text-success mb-1">₹<span id="modalAmount">0.00</span></h4>
-                <div class="fw-semibold fs-5" id="modalName">Recipient Name</div>
-                <code class="d-block text-secondary mt-1" id="modalUpi">upi@id</code>
-            </div>
-            <div class="modal-footer bg-light justify-content-center">
-                <small class="text-muted">Exact amount & recipient are embedded inside this QR code</small>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Bootstrap 5 Bundle JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<!-- QRCode.js Library CDN -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
-<script>
-    let qrInstance = null;
-
-    function openQrModal(button) {
-        const name = button.getAttribute('data-name');
-        const upi = button.getAttribute('data-upi');
-        const amount = button.getAttribute('data-amount');
-
-        // Modal text update
-        document.getElementById('modalName').textContent = name;
-        document.getElementById('modalUpi').textContent = upi;
-        document.getElementById('modalAmount').textContent = amount;
-
-        // Standard NPCI UPI Intent Format:
-        // upi://pay?pa=<UPI_ID>&pn=<NAME>&am=<AMOUNT>&cu=INR
-        const upiUrl = `upi://pay?pa=${encodeURIComponent(upi)}&pn=${encodeURIComponent(name)}&am=${encodeURIComponent(amount)}&cu=INR`;
-
-        // Clear previous QR code
-        const qrContainer = document.getElementById('qrcode');
-        qrContainer.innerHTML = "";
-
-        // Generate new QR code
-        qrInstance = new QRCode(qrContainer, {
-            text: upiUrl,
-            width: 220,
-            height: 220,
-            colorDark: "#000000",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.M
-        });
-
-        // Show Bootstrap Modal
-        const modal = new bootstrap.Modal(document.getElementById('qrModal'));
-        modal.show();
-    }
-</script>
-
 </body>
 </html>
